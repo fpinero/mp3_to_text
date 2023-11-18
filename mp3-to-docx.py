@@ -21,10 +21,9 @@ def start_transcription_job(file_uri, transcribe_client):
         TranscriptionJobName=job_name,
         Media={'MediaFileUri': file_uri},
         MediaFormat='mp3',
-        LanguageCode='en-US' 
+        LanguageCode='en-US'
     )
     return job_name
-
 
 
 def get_transcription_result(job_name, transcribe_client):
