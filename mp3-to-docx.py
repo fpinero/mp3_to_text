@@ -2,11 +2,12 @@ import boto3
 import sys
 import time
 import urllib.request
+import json
 from docx import Document
 
 
 def upload_file_to_s3(file_path, bucket_name):
-    s3_client = boto3.client('s3')
+    s3_client = boto3.client('s3', region_name='eu-central-1')
     try:
         s3_client.upload_file(file_path, bucket_name, file_path)
         return f's3://{bucket_name}/{file_path}'
@@ -36,7 +37,8 @@ def get_transcription_result(job_name, transcribe_client):
 
     if status['TranscriptionJob']['TranscriptionJobStatus'] == 'COMPLETED':
         response = urllib.request.urlopen(status['TranscriptionJob']['Transcript']['TranscriptFileUri'])
-        return response.read().decode('utf-8')
+        transcript_json = json.loads(response.read().decode('utf-8'))
+        return transcript_json['results']['transcripts'][0]['transcript']
     return None
 
 
@@ -47,7 +49,7 @@ def save_transcription_to_docx(transcription, output_file):
 
 
 def delete_file_from_s3(file_path, bucket_name):
-    s3_client = boto3.client('s3')
+    s3_client = boto3.client('s3', region_name='eu-central-1')
     try:
         s3_client.delete_object(Bucket=bucket_name, Key=file_path)
         print(f'File {file_path} deleted from bucket {bucket_name}')
@@ -62,10 +64,10 @@ def convert_mp3_to_docx():
         print('Program aborted by the user.')
         sys.exit()
 
-    s3_bucket_name = 'your-s3-bucket-name'  # Asegúrate de reemplazar esto con el nombre de tu bucket
+    s3_bucket_name = 'dev-eks-dinamo'
     s3_uri = upload_file_to_s3(file_path, s3_bucket_name)
 
-    transcribe_client = boto3.client('transcribe')
+    transcribe_client = boto3.client('transcribe', region_name='eu-central-1')
     job_name = start_transcription_job(s3_uri, transcribe_client)
 
     print("Transcription job started...")
