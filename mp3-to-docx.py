@@ -44,7 +44,10 @@ def get_transcription_result(job_name, transcribe_client):
 
 def save_transcription_to_docx(transcription, output_file):
     doc = Document()
-    doc.add_paragraph(transcription)
+    sentences = transcription.split('. ')  # Divide el texto en frases
+    for sentence in sentences:
+        doc.add_paragraph(
+            sentence.strip() + ('' if sentence.endswith('.') else '.'))  # Añade el punto si no está al final
     doc.save(output_file)
 
 
