@@ -29,16 +29,22 @@ def start_transcription_job(file_uri, transcribe_client):
 
 def get_transcription_result(job_name, transcribe_client):
     while True:
-        status = transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
-        if status['TranscriptionJob']['TranscriptionJobStatus'] in ['COMPLETED', 'FAILED']:
-            break
-        print("Waiting for transcription to complete...")
-        time.sleep(10)
+        try:
+            status = transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
+            if status['TranscriptionJob']['TranscriptionJobStatus'] in ['COMPLETED', 'FAILED']:
+                break
+            print("Waiting for transcription to complete...")
+            time.sleep(10)
+        except Exception as e:
+            print(f"Error al obtener el estado del trabajo de transcripción: {e}")
+            sys.exit()
 
     if status['TranscriptionJob']['TranscriptionJobStatus'] == 'COMPLETED':
         response = urllib.request.urlopen(status['TranscriptionJob']['Transcript']['TranscriptFileUri'])
         transcript_json = json.loads(response.read().decode('utf-8'))
         return transcript_json['results']['transcripts'][0]['transcript']
+    elif status['TranscriptionJob']['TranscriptionJobStatus'] == 'FAILED':
+        print(f"Transcription job failed with reason: {status['TranscriptionJob'].get('FailureReason', 'Unknown reason')}")
     return None
 
 
@@ -82,7 +88,7 @@ def convert_mp3_to_docx():
         print(f'Transcription completed. DOCX output saved as {docx_output}')
         delete_file_from_s3(file_path, s3_bucket_name)  # Eliminar el archivo MP3 de S3
     else:
-        print("Transcription failed.")
+        print("Transcription failed. Check the transcription job status for more details.")
 
 
 convert_mp3_to_docx()
